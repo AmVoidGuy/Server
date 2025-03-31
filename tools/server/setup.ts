@@ -30,10 +30,6 @@ function setNodeProduction(state: boolean) {
     fs.appendFileSync('.env', `NODE_DEBUG=${!state}\n`);
 }
 
-function setNodeKillTimer(timer: number) {
-    fs.appendFileSync('.env', `NODE_KILLTIMER=${timer}\n`);
-}
-
 function setLoginServer(state: boolean, host?: string, port?: number) {
     if (host && port) {
         fs.appendFileSync('.env', `LOGIN_SERVER=${state}\nLOGIN_HOST=${host}\nLOGIN_PORT=${port}\n`);
@@ -135,16 +131,6 @@ async function promptNodeProduction() {
     });
 
     setNodeProduction(choice);
-}
-
-async function promptNodeKillTimer() {
-    const rate = await number({
-        message: 'Set default reboot timer',
-        default: 50,
-        required: true
-    });
-
-    setNodeKillTimer(rate!);
 }
 
 async function promptLogin() {
@@ -464,10 +450,6 @@ async function advancedOptions() {
                 value: 'node_production'
             },
             {
-                name: 'Set default reboot timer',
-                value: 'node_killtimer'
-            },
-            {
                 name: 'Configure login server',
                 value: 'login'
             },
@@ -511,10 +493,6 @@ async function advancedOptions() {
             await promptNodeProduction();
             break;
         }
-        case 'node_killtimer': {
-            await promptNodeKillTimer();
-            break;
-        }
         case 'login': {
             await promptLogin();
             break;
@@ -537,6 +515,5 @@ async function advancedOptions() {
 try {
     await startup();
 } catch (_) {
-    // eslint-disable-line @typescript-eslint/no-unused-vars
     // no-op
 }

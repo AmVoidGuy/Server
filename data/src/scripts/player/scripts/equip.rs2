@@ -15,7 +15,7 @@ if (p_finduid(uid) = true) {
     }
     // might be rework behaviour, hard to confirm
     if(inzone(0_51_147_0_0, 0_51_147_19_63, coord) = true) {
-        if(npc_find(coord, npc_829, 4, 2) = true | npc_find(coord, npc_828, 4, 2) = true) {
+        if(npc_find(coord, mercenary_2, 4, 2) = true | npc_find(coord, mercenary_1, 4, 2) = true) {
             ~npc_retaliate(0);
             ~desertcamp_guard_search;
         }
@@ -135,6 +135,8 @@ $strengthbonus,
 $prayerbonus,
 $rangebonus = ~equip_get_bonuses;
 
+%prayer_drain_resistance = add(60, multiply($prayerbonus, 2));
+
 ~update_bonus_text(wornitems:stabattack, "Stab", $stabattack);
 ~update_bonus_text(wornitems:slashattack, "Slash", $slashattack);
 ~update_bonus_text(wornitems:crushattack, "Crush", $crushattack);
@@ -176,6 +178,8 @@ $rangedefence,
 $strengthbonus,
 $prayerbonus,
 $rangebonus = ~.equip_get_bonuses;
+
+.%prayer_drain_resistance = add(60, multiply($prayerbonus, 2));
 
 ~.update_bonus_text(wornitems:stabattack, "Stab", $stabattack);
 ~.update_bonus_text(wornitems:slashattack, "Slash", $slashattack);
@@ -405,8 +409,8 @@ if ($primary_count > 0 & oc_stackable($primary_obj) = false) {
             // since we are equipping a stackable obj that we are already wearing
             // then just calc out the differences
             inv_moveitem(inv, worn, $primary_obj, sub($count, $overflow));
-            $swapped = true;
         }
+        $swapped = true;
     } else {
         // according to kris:
         // imagine u got 2b chins equipped and 1b in inventory
@@ -424,8 +428,8 @@ if ($primary_count > 0 & oc_stackable($primary_obj) = false) {
             }
             // then move the clicked inv obj to the worn slot.
             inv_movetoslot(inv, worn, $slot, $primary_slot);
-            $swapped = true;
         }
+        $swapped = true;
     }
 } else if ($primary_count = 0 & $move_item = true) {
     inv_movetoslot(inv, worn, $slot, $primary_slot);

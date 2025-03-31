@@ -119,11 +119,6 @@ if (~player_autocast_enabled = false & ~inzone_coord_pair_table(mage_arena, coor
     return(false);
 }
 
-if ((npc_type = zamorak_wizard | npc_type = grandtree_black_demon) & %npc_attacking_uid ! uid) {
-    mes("It's not after you...");
-    return(false);
-}
-
 if(npc_type = general_khazard & %arena_progress < ^arena_freed_servils) {
     mes("I don't have time. I'm here to rescue Sir Servil and Jeremy.");
     return (false);
@@ -147,7 +142,7 @@ if(npc_type = gorad & (~obj_gettotal(ogre_tooth) > 0 | getbit_range(%itwatchtowe
     return(false);
 }
 
-if(npc_type = npc_830) {
+if(npc_type = mercenary_captain) {
     return (~mercenary_capt_attack(false));
 } 
 
@@ -156,7 +151,7 @@ if(npc_type = fire_warrior_of_lesarkus & (inv_total(worn, ice_arrow) = 0 | %dama
     return (false);
 }
 
-if(npc_type = npc_374 & %damagetype <= ^crush_style & npc_range(coord) <= 1) {
+if(npc_type = combat_training_camp_ogre & %damagetype <= ^crush_style & npc_range(coord) <= 1) {
     mes("These ogres are for ranged combat only.");
     return (false);
 }
@@ -212,15 +207,14 @@ if(npc_type = lucien_edge) {
     return (~lucien_attack);
 }
 if(npc_type = gorad & (~obj_gettotal(ogre_tooth) > 0 | getbit_range(%itwatchtower_bits, ^itwatchtower_spoken_grew, ^itwatchtower_helped_grew) ! 1)) {
-    if(%itwatchtower_progress = ^itwatchtower_complete) return (true);
-    if(getbit_range(%itwatchtower_bits, ^itwatchtower_spoken_grew, ^itwatchtower_helped_grew) < 1) {
+    if(getbit_range(%itwatchtower_bits, ^itwatchtower_spoken_grew, ^itwatchtower_helped_grew) ! 1 | %itwatchtower_progress >= ^itwatchtower_complete) {
         mes("You don't need to fight him now.");
     } else {
         mes("You have already got his tooth.");
     }
     return(false);
 }
-if(npc_type = npc_830) {
+if(npc_type = mercenary_captain) {
     return (~mercenary_capt_attack(true));
 } 
 if(npc_type = fire_warrior_of_lesarkus) { // can't attack with magic
@@ -290,7 +284,8 @@ if ($damagetype = ^magic_style) {
     $stat = magic;
 }
 def_int $defencebonus = ~npc_combat_defencebonus($damagetype);
-def_int $effective_defence = ~combat_effective_stat(1, npc_stat($stat), 100); // no prayerbonus
+def_int $effective_defence = ~combat_effective_stat(npc_stat($stat), 100); // no prayerbonus
+$effective_defence = add($effective_defence, 9); // 'style bonus' of 1
 def_int $defence_roll = ~combat_stat($effective_defence, $defencebonus);
 return($defence_roll);
 
@@ -333,7 +328,7 @@ if (map_multiway(npc_coord) = false & %npc_attacking_uid ! uid & %npc_attacking_
     %npc_action_delay = add(map_clock, 8);
 }
 %npc_aggressive_player = uid;
-%npc_lastcombat = map_clock;
+if(%npc_lastcombat < map_clock) %npc_lastcombat = map_clock;
 
 [proc,.npc_retaliate](int $queue_delay)
 .npc_queue(1, 0, $queue_delay);
@@ -342,7 +337,7 @@ if (map_multiway(.npc_coord) = false & .%npc_attacking_uid ! uid & .%npc_attacki
     .%npc_action_delay = add(map_clock, 8);
 }
 .%npc_aggressive_player = uid;
-.%npc_lastcombat = map_clock;
+if(.%npc_lastcombat < map_clock) .%npc_lastcombat = map_clock;
 
 [proc,npc_set_attack_vars]
 %lastcombat = map_clock;

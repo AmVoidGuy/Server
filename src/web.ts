@@ -2,13 +2,15 @@ import fs from 'fs';
 import fsp from 'fs/promises';
 import http from 'http';
 import { extname } from 'path';
+
 import ejs from 'ejs';
+import { register } from 'prom-client';
 
 import { CrcBuffer } from '#/cache/CrcTable.js';
-
 import Environment from '#/util/Environment.js';
 import { tryParseInt } from '#/util/TryParse.js';
-import { register } from 'prom-client';
+
+import { getPublicPerDeploymentToken } from './io/PemUtil.js';
 
 const MIME_TYPES = new Map<string, string>();
 MIME_TYPES.set('.js', 'application/javascript');
@@ -90,12 +92,24 @@ export const web = http.createServer(async (req, res) => {
 
             res.setHeader('Content-Type', 'text/html');
             res.writeHead(200);
-            res.end(await ejs.renderFile('view/client.ejs', {
+
+            const context = {
                 plugin,
                 nodeid: Environment.NODE_ID,
                 lowmem,
-                members: Environment.NODE_MEMBERS
-            }));
+                members: Environment.NODE_MEMBERS,
+                portoff: Environment.NODE_PORT - 43594,
+                per_deployment_token: ''
+            };
+            if (Environment.WEB_SOCKET_TOKEN_PROTECTION) {
+                context.per_deployment_token = getPublicPerDeploymentToken();
+            }
+
+            if (plugin === 1 && Environment.NODE_DEBUG) {
+                res.end(await ejs.renderFile('view/java.ejs', context));
+            } else {
+                res.end(await ejs.renderFile('view/client.ejs', context));
+            }
         } else if (fs.existsSync('public' + url.pathname)) {
             res.setHeader('Content-Type', MIME_TYPES.get(extname(url.pathname ?? '')) ?? 'text/plain');
             res.writeHead(200);
@@ -104,7 +118,7 @@ export const web = http.createServer(async (req, res) => {
             res.writeHead(404);
             res.end();
         }
-    } catch (_) {  // eslint-disable-line @typescript-eslint/no-unused-vars
+    } catch (_) {
         res.end();
     }
 });

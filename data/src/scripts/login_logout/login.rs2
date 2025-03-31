@@ -29,8 +29,6 @@ queue(macro_event_login, 0);
 ~set_pk_skull_login;
 // so antifire persists after logging back in
 ~set_antifire_login;
-// so antipoison persists after logging back in
-~set_antipoison_login;
 // if player is in a duel, they are removed from the duel
 ~duel_arena_login;
 // if player is in a gnomeball game, they login outside of the arena
@@ -42,7 +40,6 @@ queue(macro_event_login, 0);
 ~set_poison_login;
 // update weight-reduction equipment (in the case where you switch from f2p <-> p2p)
 ~update_weight_equipment;
-~set_cannon_vars_login;
 ~ferment_wines_login;
 ~thieving_stall_timers_login;
 ~stat_boost_login; // f2p boost reset
@@ -64,6 +61,7 @@ if (%tutorial_progress < ^tutorial_complete) {
 }
 ~initalltabs;
 ~update_all(inv_getobj(worn, ^wearpos_rhand));
+cam_reset;
 queue(follower_login, 0);
 if (map_production = true) {
     last_login_info;

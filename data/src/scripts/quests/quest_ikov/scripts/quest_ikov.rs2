@@ -55,7 +55,7 @@ while (npc_huntnext = true) {
         return;
     }
 }
-@pickup_obj(obj_coord, obj_type, obj_count);
+@pickup_obj;
 
 [queue,ikov_armadyl_quest_complete](npc_uid $npc)
 %ikov_progress = ^ikov_completed_armadyl;
@@ -84,5 +84,5 @@ mes("Resetting all varps affected by ikov update");
 %ikov_icearrowchest_coord = null;
 %haunted_lever = 0;
 %haunted_manor_fountain_poisoned = 0;
-%varp_35 = 0;
+%cog_cooled = 0;
 

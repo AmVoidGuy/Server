@@ -1,49 +1,39 @@
 import 'dotenv/config';
 
-import Packet from '#/io/Packet.js';
-
-import ClientSocket from '#/server/ClientSocket.js';
-import NullClientSocket from '#/server/NullClientSocket.js';
-import LoggerEventType from '#/server/logger/LoggerEventType.js';
-
-import World from '#/engine/World.js';
-import Player from '#/engine/entity/Player.js';
-import { CoordGrid } from '#/engine/CoordGrid.js';
-import WorldStat from '#/engine/WorldStat.js';
-import NpcRenderer from '#/engine/renderer/NpcRenderer.js';
-import PlayerRenderer from '#/engine/renderer/PlayerRenderer.js';
-import SceneState from '#/engine/entity/SceneState.js';
-import Zone from '#/engine/zone/Zone.js';
-import ZoneMap from '#/engine/zone/ZoneMap.js';
+import * as rsbuf from '@2004scape/rsbuf';
 
 import InvType from '#/cache/config/InvType.js';
-
-import ServerProt from '#/network/rs225/server/prot/ServerProt.js';
+import { CoordGrid } from '#/engine/CoordGrid.js';
+import Player from '#/engine/entity/Player.js';
+import World from '#/engine/World.js';
+import WorldStat from '#/engine/WorldStat.js';
+import Zone from '#/engine/zone/Zone.js';
+import Packet from '#/io/Packet.js';
+import ClientProtCategory from '#/network/client/prot/ClientProtCategory.js';
 import ClientProt from '#/network/rs225/client/prot/ClientProt.js';
 import ClientProtRepository from '#/network/rs225/client/prot/ClientProtRepository.js';
-import ClientProtCategory from '#/network/client/prot/ClientProtCategory.js';
+import ServerProt from '#/network/rs225/server/prot/ServerProt.js';
 import ServerProtRepository from '#/network/rs225/server/prot/ServerProtRepository.js';
-
-import IfClose from '#/network/server/model/IfClose.js';
-import IfOpenMainSide from '#/network/server/model/IfOpenMainSide.js';
-import IfOpenMain from '#/network/server/model/IfOpenMain.js';
-import IfOpenChat from '#/network/server/model/IfOpenChat.js';
-import IfOpenSide from '#/network/server/model/IfOpenSide.js';
-import RebuildNormal from '#/network/server/model/RebuildNormal.js';
-import UpdateStat from '#/network/server/model/UpdateStat.js';
-import UpdateRunEnergy from '#/network/server/model/UpdateRunEnergy.js';
-import UpdateInvFull from '#/network/server/model/UpdateInvFull.js';
-import UpdateRunWeight from '#/network/server/model/UpdateRunWeight.js';
-import CamMoveTo from '#/network/server/model/CamMoveTo.js';
-import CamLookAt from '#/network/server/model/CamLookAt.js';
-import OutgoingMessage from '#/network/server/OutgoingMessage.js';
 import MessageEncoder from '#/network/server/codec/MessageEncoder.js';
+import CamLookAt from '#/network/server/model/CamLookAt.js';
+import CamMoveTo from '#/network/server/model/CamMoveTo.js';
+import IfClose from '#/network/server/model/IfClose.js';
+import IfOpenChat from '#/network/server/model/IfOpenChat.js';
+import IfOpenMain from '#/network/server/model/IfOpenMain.js';
+import IfOpenMainSide from '#/network/server/model/IfOpenMainSide.js';
+import IfOpenSide from '#/network/server/model/IfOpenSide.js';
 import Logout from '#/network/server/model/Logout.js';
-import PlayerInfo from '#/network/server/model/PlayerInfo.js';
 import NpcInfo from '#/network/server/model/NpcInfo.js';
+import PlayerInfo from '#/network/server/model/PlayerInfo.js';
 import SetMultiway from '#/network/server/model/SetMultiway.js';
-import UpdateZoneFullFollows from '#/network/server/model/UpdateZoneFullFollows.js';
-
+import UpdateInvFull from '#/network/server/model/UpdateInvFull.js';
+import UpdateRunEnergy from '#/network/server/model/UpdateRunEnergy.js';
+import UpdateRunWeight from '#/network/server/model/UpdateRunWeight.js';
+import UpdateStat from '#/network/server/model/UpdateStat.js';
+import OutgoingMessage from '#/network/server/OutgoingMessage.js';
+import ClientSocket from '#/server/ClientSocket.js';
+import LoggerEventType from '#/server/logger/LoggerEventType.js';
+import NullClientSocket from '#/server/NullClientSocket.js';
 import { printError } from '#/util/Logger.js';
 
 export class NetworkPlayer extends Player {
@@ -259,8 +249,6 @@ export class NetworkPlayer extends Player {
     }
 
     updateMap() {
-        this.rebuildNormal();
-
         // update the camera after rebuild.
         for (let info = this.cameraPackets.head(); info !== null; info = this.cameraPackets.next()) {
             const localX = info.camX - CoordGrid.zoneOrigin(this.originX);
@@ -289,9 +277,7 @@ export class NetworkPlayer extends Player {
         // zone changed
         const zone = CoordGrid.packCoord(this.level, (this.x >> 3) << 3, (this.z >> 3) << 3);
         if (this.lastZone !== zone) {
-            if (this.scene === SceneState.READY) {
-                this.rebuildZones();
-            }
+            this.buildArea.rebuildZones();
 
             // zone triggers
             const lastWasMulti = World.gameMap.isMulti(this.lastZone);
@@ -310,25 +296,18 @@ export class NetworkPlayer extends Player {
         }
     }
 
-    updatePlayers(renderer: PlayerRenderer) {
-        this.write(new PlayerInfo(World.currentTick, renderer, this, Math.abs(this.lastTickX - this.x), Math.abs(this.lastTickZ - this.z), this.lastLevel !== this.level));
+    updatePlayers() {
+        this.write(new PlayerInfo(rsbuf.playerInfo(this.client.out.pos, this.pid, Math.abs(this.lastTickX - this.x), Math.abs(this.lastTickZ - this.z), this.lastLevel !== this.level)));
     }
 
-    updateNpcs(renderer: NpcRenderer) {
-        this.write(new NpcInfo(World.currentTick, renderer, this, Math.abs(this.lastTickX - this.x), Math.abs(this.lastTickZ - this.z), this.lastLevel !== this.level));
+    updateNpcs() {
+        this.write(new NpcInfo(rsbuf.npcInfo(this.client.out.pos, this.pid, Math.abs(this.lastTickX - this.x), Math.abs(this.lastTickZ - this.z), this.lastLevel !== this.level)));
     }
 
     updateZones() {
-        if (this.scene === SceneState.NONE) {
-            return;
-        }
-
-        if (this.scene === SceneState.LOAD) {
-            this.scene = SceneState.READY;
-        }
-
         const loadedZones: Set<number> = this.buildArea.loadedZones;
         const activeZones: Set<number> = this.buildArea.activeZones;
+
         // unload any zones that are no longer active
         for (const zoneIndex of loadedZones) {
             if (!activeZones.has(zoneIndex)) {

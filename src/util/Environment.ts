@@ -12,6 +12,13 @@ export default {
     /// web server
     WEB_PORT: tryParseInt(process.env.WEB_PORT, process.platform === 'win32' || process.platform === 'darwin' ? 80 : 8888),
     WEB_ALLOWED_ORIGIN: tryParseString(process.env.WEB_ALLOWED_ORIGIN, ''),
+    // WEB_SOCKET_TOKEN_RPOTECTION tightens security somewhat by embedding a token in the
+    // rs2.cgi html which is sent on each login. if token is absent or wrong,
+    // the login is rejected. this is mainly for preventing external WebSockets
+    // that have not accessed the server's game page.
+    // NOTE: if you set protection on, and there were clients with page loaded without this option on,
+    // they wont be able to connect until they F5, as the cookie won't have been sent.
+    WEB_SOCKET_TOKEN_PROTECTION: tryParseBoolean(process.env.WEB_SOCKET_TOKEN_PROTECTECTION, false),
 
     // management server
     WEB_MANAGEMENT_PORT: tryParseInt(process.env.WEB_MANAGEMENT_PORT, 8898),
@@ -22,6 +29,8 @@ export default {
     NODE_PORT: tryParseInt(process.env.NODE_PORT, 43594),
     // members content
     NODE_MEMBERS: tryParseBoolean(process.env.NODE_MEMBERS, true),
+    // automatically upgrade accounts to members on successful login to a members world
+    NODE_AUTO_SUBSCRIBE_MEMBERS: tryParseBoolean(process.env.NODE_AUTO_SUBSCRIBE_MEMBERS, true),
     // addxp multiplier
     NODE_XPRATE: tryParseInt(process.env.NODE_XPRATE, 1),
     // production mode!
@@ -30,8 +39,6 @@ export default {
     // Maximum approximate number of storage bytes allowed per single input tracking session.
     // It does not seem remotely possible to get near this amount under normal inputs.
     NODE_LIMIT_BYTES_PER_TRACKING_SESSION: tryParseInt(process.env.NODE_MAX_BYTES_PER_TRACKING_SESSION, 50_000),
-    // automatic shutdown time for production mode on sigint
-    NODE_KILLTIMER: tryParseInt(process.env.NODE_KILLTIMER, 500), // 5 minutes
     // extra debug info e.g. missing triggers
     NODE_DEBUG: tryParseBoolean(process.env.NODE_DEBUG, true),
     // measuring script execution
@@ -47,6 +54,7 @@ export default {
     NODE_PROFILE: tryParseString(process.env.NODE_PROFILE, 'main'),
     // entities cap
     NODE_MAX_PLAYERS: tryParseInt(process.env.NODE_MAX_PLAYERS, 2047),
+    NODE_MAX_CONNECTED: tryParseInt(process.env.NODE_MAX_CONNECTED, 1000),
     NODE_MAX_NPCS: tryParseInt(process.env.NODE_MAX_NPCS, 8191),
     NODE_DEBUGPROC_CHAR: tryParseString(process.env.NODE_DEBUGPROC_CHAR, '~'),
 
