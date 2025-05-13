@@ -613,7 +613,7 @@ class Pix8 extends DoublyLinkable {
   cropW;
   cropH;
   rgbPal;
-  animspeed;
+  animSpeed;
   animDirection;
   constructor(width, height, palette) {
     super();
@@ -1037,7 +1037,7 @@ class Pix3D extends Pix2D {
   static activeTexels = new TypedArray1d(128, null);
   static poolSize = 0;
   static cycle = 0;
-  static textureCycle = new Int32Array(50);
+  static textureCycle = new Int32Array(128);
   static texPal = new TypedArray1d(128, null);
   static opaque = false;
   static textureTranslucent = new TypedArray1d(128, false);
