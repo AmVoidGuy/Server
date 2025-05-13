@@ -105,5 +105,7 @@ export default {
     // used for unpacking/custom development
     BUILD_VERIFY_PACK: tryParseBoolean(process.env.BUILD_VERIFY_PACK, true),
     // used for unpacking/custom development
-    BUILD_SRC_DIR: tryParseString(process.env.BUILD_SRC_DIR, 'data/src')
+    BUILD_SRC_DIR: tryParseString(process.env.BUILD_SRC_DIR, 'data/src'),
+    // used for packing texture animation variables
+    ANIMATE_TEXTURES: tryParseBoolean(process.env.ANIMATE_TEXTURES, true),
 };

@@ -5,6 +5,8 @@ import type { Bitmap } from 'jimp';
 
 import Packet from '#/io/Packet.js';
 
+import Environment from './Environment.js';
+
 export function generatePixelOrder(img: { bitmap: Bitmap }) {
     let rowMajorScore = 0;
     let columnMajorScore = 0;
@@ -32,7 +34,7 @@ export function generatePixelOrder(img: { bitmap: Bitmap }) {
     return columnMajorScore < rowMajorScore ? 0 : 1;
 }
 
-export function writeImage(img: { bitmap: Bitmap }, data: Packet, index: Packet, colors: number[], meta: Sprite | null = null) {
+export function writeImage(img: { bitmap: Bitmap }, data: Packet, index: Packet, colors: number[], meta: Sprite | null = null, useAnim: boolean) {
     let left = 0;
     let top = 0;
     let right = img.bitmap.width;
@@ -55,6 +57,14 @@ export function writeImage(img: { bitmap: Bitmap }, data: Packet, index: Packet,
         pixelOrder = meta.pixelOrder;
     }
     index.p1(pixelOrder);
+
+    if(useAnim && meta && meta.animSpeed && meta.animSpeed != 0 && meta.animDirection && meta.animDirection != 0 && Environment.ANIMATE_TEXTURES) {
+        index.p1(meta.animDirection);
+        index.p1(meta.animSpeed);
+    } else if(useAnim) {
+        index.p1(0);
+        index.p1(0);
+    }
 
     if (pixelOrder === 0) {
         for (let j = 0; j < img.bitmap.width * img.bitmap.height; j++) {
@@ -109,6 +119,8 @@ type Sprite = {
     w: number;
     h: number;
     pixelOrder: 0 | 1;
+    animDirection?: number;
+    animSpeed?: number;
 };
 
 function generatePalette(img: { bitmap: Bitmap }) {
@@ -158,7 +170,9 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
                 y: parseInt(sprite[1]),
                 w: parseInt(sprite[2]),
                 h: parseInt(sprite[3]),
-                pixelOrder: sprite[4] === 'row' ? 1 : 0
+                pixelOrder: sprite[4] === 'row' ? 1 : 0,
+                animDirection: sprite[5] ? parseInt(sprite[5]) : 0,
+                animSpeed: sprite[6] ? parseInt(sprite[6]) : 0
             });
         } else {
             const tiling = metadata[0].split('x');
@@ -201,7 +215,10 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
     for (let j = 1; j < colors.length; j++) {
         index.p3(colors[j]);
     }
-
+    let useAnim = false;
+    if(srcPath.includes('textures')) {
+        useAnim = true;
+    }
     if (sprites.length > 1) {
         for (let y = 0; y < img.bitmap.height / tileY; y++) {
             for (let x = 0; x < img.bitmap.width / tileX; x++) {
@@ -211,11 +228,11 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
                     w: tileX,
                     h: tileY
                 });
-                writeImage(tile, data, index, colors, sprites[x + y * (img.bitmap.width / tileX)]);
+                writeImage(tile, data, index, colors, sprites[x + y * (img.bitmap.width / tileX)], useAnim);
             }
         }
     } else {
-        writeImage(img, data, index, colors, sprites[0]);
+        writeImage(img, data, index, colors, sprites[0], useAnim);
     }
 
     return data;
